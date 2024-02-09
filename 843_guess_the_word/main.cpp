@@ -25,132 +25,67 @@ int NumSharedLetters(std::string a, std::string b)
     return shared;
 }
 
-std::string GetNextGuess1(
-    std::string lastGuess, 
-    int lastCorrect, 
-    std::vector<std::string> &words, 
-    std::unordered_set<std::string>& guessed)
+std::string GetRandomGuess(std::vector<std::string>& possibles)
 {
-    std::string guess;
+    static std::random_device seed;
+    static std::mt19937 gen{seed()};
+    std::uniform_int_distribution<> dist{ 0, (int)(possibles.size() - 1) };
+    int guessIndex = dist(gen);
 
-    // The first guess is random.
-    if (lastGuess.empty() == true)
-    {
-        std::random_device seed;
-        std::mt19937 gen{seed()};
-        std::uniform_int_distribution<> dist{ 0, (int)(words.size() - 1) };
-        int guessIndex = dist(gen);
-        guess = words[guessIndex];
-    }
-    // For subsequent guesses, choose an un-guessed word that shares the same number of letters
-    // with the last guess as the last guess shares with the secret.
-    else
-    {
-        for (std::string word : words)
-        {
-            if (guessed.count(word) == 0)
-            {
-                if (lastCorrect == 0)
-                {
-                    guess = word;
-                    break;
-                }
-                else
-                {
-                    if (NumSharedLetters(word, lastGuess) == lastCorrect)
-                    {
-                        guess = word;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if (guess.empty() == false)
-    {
-        guessed.insert(guess);
-    }
-
-    return guess;
+    return possibles[guessIndex];
 }
 
-std::string GetNextGuess2(
-    std::string lastGuess, 
-    int lastCorrect, 
-    std::vector<std::string> &words, 
-    std::unordered_set<std::string>& guessed)
+std::vector<std::string> GetPossiblesList(std::vector<std::string>& words, std::string lastGuess, int numCorrect)
 {
-    std::string guess;
+    std::vector<std::string> temp;
 
-    // The first guess is random.
-    if (lastGuess.empty() == true)
+    for (std::string word : words)
     {
-        std::random_device seed;
-        std::mt19937 gen{seed()};
-        std::uniform_int_distribution<> dist{ 0, (int)(words.size() - 1) };
-        int guessIndex = dist(gen);
-        guess = words[guessIndex];
-    }
-    // For subsequent guesses, choose an un-guessed word that shares the same number of letters
-    // with the last guess as the last guess shares with the secret.
-    else
-    {
-        for (std::string word : words)
+        if (NumSharedLetters(word, lastGuess) == numCorrect)
         {
-            if (guessed.count(word) == 0)
-            {
-                if (lastCorrect == 0)
-                {
-                    guess = word;
-                    break;
-                }
-                else
-                {
-                    if (NumSharedLetters(word, lastGuess) == lastCorrect)
-                    {
-                        guess = word;
-                        break;
-                    }
-                }
-            }
+            temp.push_back(word);
         }
     }
 
-    if (guess.empty() == false)
-    {
-        guessed.insert(guess);
-    }
-
-    return guess;
+    return temp;
 }
 
 void findSecretWord(std::vector<std::string> &words, Master &master)
 {
     static constexpr int perfectMatch = 6;
-    int correct = 0;
-    std::unordered_set<std::string> guessed;
+    int numCorrect = 0;
     std::string guessWord;
     int numGuesses = 1;
+    std::vector<std::string> possibles;
 
-    while (correct != perfectMatch)
+    guessWord = GetRandomGuess(words);
+    numCorrect = master.guess(guessWord);
+    possibles = GetPossiblesList(words, guessWord, numCorrect);
+    if (possibles.empty() == true)
     {
-        guessWord = GetNextGuess1(guessWord, correct, words, guessed);
-        if (guessWord.empty() == true)
+        std::cout << "All guesses exhausted!" << std::endl;
+        return;
+    }
+
+    while (numCorrect != perfectMatch)
+    {
+        guessWord = GetRandomGuess(possibles);
+
+        numCorrect = master.guess(guessWord);
+
+        std::vector<std::string> newPossibles;
+        newPossibles = GetPossiblesList(possibles, guessWord, numCorrect);
+        possibles = newPossibles;
+        if (possibles.empty() == true)
         {
             std::cout << "All guesses exhausted!" << std::endl;
             return;
         }
 
-        correct = master.guess(guessWord);
-        if (correct == perfectMatch)
-        {
-            std::cout << "Correctly guessed " << guessWord << " after " << numGuesses << " guesses!" << std::endl;
-            return;
-        }
-
         numGuesses++;
     }
+
+    std::cout << "Correctly guessed " << guessWord << " after " << numGuesses << " guesses!" << std::endl;
 }
 
 int main()
