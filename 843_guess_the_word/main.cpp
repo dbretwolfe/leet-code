@@ -25,12 +25,14 @@ int NumSharedLetters(std::string a, std::string b)
     return shared;
 }
 
-std::string GetNextGuess(
+std::string GetNextGuess1(
     std::string lastGuess, 
     int lastCorrect, 
     std::vector<std::string> &words, 
     std::unordered_set<std::string>& guessed)
 {
+    std::string guess;
+
     // The first guess is random.
     if (lastGuess.empty() == true)
     {
@@ -38,30 +40,89 @@ std::string GetNextGuess(
         std::mt19937 gen{seed()};
         std::uniform_int_distribution<> dist{ 0, (int)(words.size() - 1) };
         int guessIndex = dist(gen);
-        return words[guessIndex];
+        guess = words[guessIndex];
     }
-
-    // For subsequent guesses, chose an un-guessed word that shares the same number of letters
+    // For subsequent guesses, choose an un-guessed word that shares the same number of letters
     // with the last guess as the last guess shares with the secret.
-    for (std::string word : words)
+    else
     {
-        if (guessed.count(word) == 0)
+        for (std::string word : words)
         {
-            if (lastCorrect == 0)
+            if (guessed.count(word) == 0)
             {
-                return word;
-            }
-            else
-            {
-                if (NumSharedLetters(word, lastGuess) == lastCorrect)
+                if (lastCorrect == 0)
                 {
-                    return word;
+                    guess = word;
+                    break;
+                }
+                else
+                {
+                    if (NumSharedLetters(word, lastGuess) == lastCorrect)
+                    {
+                        guess = word;
+                        break;
+                    }
                 }
             }
         }
     }
 
-    return std::string();
+    if (guess.empty() == false)
+    {
+        guessed.insert(guess);
+    }
+
+    return guess;
+}
+
+std::string GetNextGuess2(
+    std::string lastGuess, 
+    int lastCorrect, 
+    std::vector<std::string> &words, 
+    std::unordered_set<std::string>& guessed)
+{
+    std::string guess;
+
+    // The first guess is random.
+    if (lastGuess.empty() == true)
+    {
+        std::random_device seed;
+        std::mt19937 gen{seed()};
+        std::uniform_int_distribution<> dist{ 0, (int)(words.size() - 1) };
+        int guessIndex = dist(gen);
+        guess = words[guessIndex];
+    }
+    // For subsequent guesses, choose an un-guessed word that shares the same number of letters
+    // with the last guess as the last guess shares with the secret.
+    else
+    {
+        for (std::string word : words)
+        {
+            if (guessed.count(word) == 0)
+            {
+                if (lastCorrect == 0)
+                {
+                    guess = word;
+                    break;
+                }
+                else
+                {
+                    if (NumSharedLetters(word, lastGuess) == lastCorrect)
+                    {
+                        guess = word;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (guess.empty() == false)
+    {
+        guessed.insert(guess);
+    }
+
+    return guess;
 }
 
 void findSecretWord(std::vector<std::string> &words, Master &master)
@@ -74,7 +135,7 @@ void findSecretWord(std::vector<std::string> &words, Master &master)
 
     while (correct != perfectMatch)
     {
-        guessWord = GetNextGuess(guessWord, correct, words, guessed);
+        guessWord = GetNextGuess1(guessWord, correct, words, guessed);
         if (guessWord.empty() == true)
         {
             std::cout << "All guesses exhausted!" << std::endl;
@@ -88,7 +149,6 @@ void findSecretWord(std::vector<std::string> &words, Master &master)
             return;
         }
 
-        guessed.insert(guessWord);
         numGuesses++;
     }
 }
@@ -96,10 +156,10 @@ void findSecretWord(std::vector<std::string> &words, Master &master)
 int main()
 {
     std::vector<std::string> words = {"gaxckt","trlccr","jxwhkz","ycbfps","peayuf","yiejjw","ldzccp","nqsjoa","qrjasy","pcldos","acrtag","buyeia","ubmtpj","drtclz","zqderp","snywek","caoztp","ibpghw","evtkhl","bhpfla","ymqhxk","qkvipb","tvmued","rvbass","axeasm","qolsjg","roswcb","vdjgxx","bugbyv","zipjpc","tamszl","osdifo","dvxlxm","iwmyfb","wmnwhe","hslnop","nkrfwn","puvgve","rqsqpq","jwoswl","tittgf","evqsqe","aishiv","pmwovj","sorbte","hbaczn","coifed","hrctvp","vkytbw","dizcxz","arabol","uywurk","ppywdo","resfls","tmoliy","etriev","oanvlx","wcsnzy","loufkw","onnwcy","novblw","mtxgwe","rgrdbt","ckolob","kxnflb","phonmg","egcdab","cykndr","lkzobv","ifwmwp","jqmbib","mypnvf","lnrgnj","clijwa","kiioqr","syzebr","rqsmhg","sczjmz","hsdjfp","mjcgvm","ajotcx","olgnfv","mjyjxj","wzgbmg","lpcnbj","yjjlwn","blrogv","bdplzs","oxblph","twejel","rupapy","euwrrz","apiqzu","ydcroj","ldvzgq","zailgu","xgqpsr","wxdyho","alrplq","brklfk"};
-    Master master(words, "sorbte");
+    Master master(words, "hbaczn");
 
     for (int i = 0; i < 10; i++)
     {
-        findSecretWord1(words, master);
+        findSecretWord(words, master);
     }
 }
