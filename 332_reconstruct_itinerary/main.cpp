@@ -2,24 +2,34 @@
 #include <vector>
 #include <string>
 
+class Itinerary
+{
+public:
+    Itinerary(size_t numTickets) { used.resize(numTickets); }
+
+    
+    std::vector<std::string> nodes;
+    std::vector<bool> used;
+    int usedCount = 0;
+};
+
+// Append the destination of the next ticket to the itinerary.
 void AddNextDestination(
-    std::vector<std::string>& itenerary, 
+    Itinerary& itinerary, 
     std::vector<std::vector<std::string>>& tickets,
-    int ticketNum,
-    std::vector<bool>& used,
-    int& usedCount
+    int nextTicket
     )
 {
-    if (itenerary.empty()) {
-        itenerary.push_back(tickets[ticketNum][0]);
-        itenerary.push_back(tickets[ticketNum][1]);
+    if (itinerary.nodes.empty() == true) {
+        itinerary.nodes.push_back(tickets[nextTicket][0]);
+        itinerary.nodes.push_back(tickets[nextTicket][1]);
     }
     else {
-        itenerary.push_back(tickets[ticketNum][1]);
+        itinerary.nodes.push_back(tickets[nextTicket][1]);
     }
 
-    used[ticketNum] = true;
-    usedCount++;
+    itinerary.used[nextTicket] = true;
+    itinerary.usedCount++;
 }
 
 // Find the minimum lexical value of the different ticket destinations.
@@ -37,66 +47,80 @@ int ChooseTicket(std::vector<std::vector<std::string>>& tickets, std::vector<int
     return ticket;
 }
 
-int GetNextTicket(
-    std::vector<std::string>& itenerary, 
-    std::vector<std::vector<std::string>>& tickets, 
-    std::vector<bool>& used
+// Find any tickets that will continue the itenerary.
+std::vector<int> GetNextTickets(
+    Itinerary& itinerary, 
+    std::vector<std::vector<std::string>>& tickets
     )
 {
     std::vector<int> nextTickets;
 
     for (int i = 0; i < tickets.size(); i++) {
-        if (used[i] == true){
+        if (itinerary.used[i] == true){
             continue;
         }
-        else if (itenerary.empty()) {
+        else if (itinerary.nodes.empty() == true) {
             if (tickets[i][0] == "JFK") {
                 nextTickets.push_back(i);
             }
         }
-        else if (itenerary[itenerary.size() - 1] == tickets[i][0]) {
+        else if (itinerary.nodes[itinerary.nodes.size() - 1] == tickets[i][0]) {
             nextTickets.push_back(i);
         }
     }
-    
-    if (nextTickets.empty() == true) {
-        return -1;
-    }
-    else if (nextTickets.size() == 1) {
-        return nextTickets[0];
-    }
-    else {
-        return ChooseTicket(tickets, nextTickets);
-    }
+
+    return nextTickets;
 }
 
 std::vector<std::string> findItinerary(std::vector<std::vector<std::string>>& tickets) 
 {
-    std::vector<std::string> itenerary;
-    std::vector<bool> used(tickets.size());
-    int usedCount = 0;
+    std::vector<Itinerary> itineraryList = { Itinerary(tickets.size()) };
 
-    while (usedCount < tickets.size()) {
-        int nextTicket = GetNextTicket(itenerary, tickets, used);
-        if (nextTicket < 0)
+    while (1) {
+        int passCount = 0;
+        for (int i = 0; i < itineraryList.size(); i++) {
+            std::vector<int> nextTickets = GetNextTickets(itineraryList[i], tickets);
+
+            // If there are no ticket matches, increment the pass count and continue.
+            if (nextTickets.empty() == true) {
+                passCount++;
+                continue;
+            }
+            // If there is one ticket match, add that ticket to the current itinerary.
+            // If there are more than one matches, copy the current itinerary for each match and
+            // add the match to the end of the copy.
+            else {
+                // Create any copies before modifying the current itinerary.
+                for (int j = 1 ; j < nextTickets.size(); j ++) {
+                    Itinerary newItinerary(itineraryList[i]);
+                    itineraryList.push_back(newItinerary);
+                    AddNextDestination(itineraryList.back(), tickets, nextTickets[j]);
+                }
+
+                // Add the first match to the current itenerary. 
+                AddNextDestination(itineraryList[i], tickets, nextTickets[0]);
+            }
+        }
+
+        // If none of the itineraries had any remaining matches, break the loop.
+        if (passCount == itineraryList.size())
         {
             break;
         }
-        
-        AddNextDestination(itenerary, tickets, nextTicket, used, usedCount);
-    }
+    }   
 
-    return itenerary;
+    return std::vector<std::string>();
 }
 
 int main()
 {
     std::vector<std::vector<std::string>> tickets0 = { {"MUC", "LHR"}, {"JFK", "MUC"}, {"SFO", "SJC"}, {"LHR", "SFO"} };
     std::vector<std::vector<std::string>> tickets1 = { {"JFK","SFO"}, {"JFK","ATL"}, {"SFO","ATL"}, {"ATL","JFK"}, {"ATL","SFO"} };
-    std::vector<std::string>& itenerary = findItinerary(tickets1);
+    std::vector<std::vector<std::string>> tickets2 = { {"JFK","KUL"}, {"JFK","NRT"}, {"NRT","JFK"} };
+    std::vector<std::string>& itinerary = findItinerary(tickets2);
 
-    std::cout << "Itenerary: ";
-    for (auto stop : itenerary) {
+    std::cout << "itinerary: ";
+    for (auto stop : itinerary) {
         std::cout << stop << " ";
     }
     std::cout << std::endl;
