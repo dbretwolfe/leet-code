@@ -113,17 +113,20 @@ std::vector<std::string> findItinerary(std::vector<std::vector<std::string>>& ti
         int passCount = 0;
         auto it = itineraryList.begin();
 
-        for(;it != itineraryList.end(); it++) {
+        while(it != itineraryList.end()) {
             std::vector<int> nextTickets = GetNextTickets(*it, tickets);
 
             // If there are no ticket matches, increment the pass count and continue.
             // If this itinerary runs out of ticket combinations before using all tickets, remove it from the list.
             if (nextTickets.empty() == true) {
                 if (it->usedCount < tickets.size()) {
-                    itineraryList.erase(it);
+                    auto temp = it;
+                    it++;
+                    itineraryList.erase(temp);
                 }
                 else {
                     passCount++;
+                    it++;
                 }
             }
             // If there is one ticket match, add that ticket to the current itinerary.
